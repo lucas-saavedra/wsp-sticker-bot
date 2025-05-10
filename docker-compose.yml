@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  whatsapp-bot:
+    build: .
+    container_name: whatsapp-sticker-bot
+    restart: unless-stopped
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+    volumes:
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+    ports:
+      - "3000:3000"
