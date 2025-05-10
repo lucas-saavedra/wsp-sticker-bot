@@ -4,11 +4,12 @@ const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 
 const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+  puppeteer: {
+    executablePath: '/usr/bin/chromium-browser',
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    headless: true
+  },
+  authStrategy: new LocalAuth()
 });
 client.on('qr', qr => {
     qrcode.generate(qr, { small: true });

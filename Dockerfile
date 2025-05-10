@@ -24,7 +24,8 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     --no-install-recommends && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y chromium && \
+    ln -s /usr/bin/chromium /usr/bin/chromium-browser
 # Setea variable de entorno para Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
