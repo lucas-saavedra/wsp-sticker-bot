@@ -18,9 +18,10 @@ client.on('ready', () => {
 });
 
 client.on('message_create', async message => {
-    if (message.body === '!sticker' && message.hasQuotedMsg) {
+    const match = message.body.match(/^!sticker(?:\s+(\d+(?:\.\d+)?x))?$/i);
+    if (match && message.hasQuotedMsg) {
+        const speedMultiplier = match[1] ? parseFloat(match[1].replace('x', '')) : 1;
         const quotedMsg = await message.getQuotedMessage();
-
         if (quotedMsg.hasMedia) {
             const media = await quotedMsg.downloadMedia();
 
@@ -31,10 +32,7 @@ client.on('message_create', async message => {
                 );
                 return;
             }
-
             const mime = media.mimetype;
-            console.log('MIME:', mime);
-
             // Si es imagen (png o jpeg)
             if (mime.startsWith('image/')) {
                 const ext = mime.split('/')[1];
@@ -53,13 +51,12 @@ client.on('message_create', async message => {
                 const extension = mime.includes('gif') ? '.gif' : '.mp4';
                 const inputPath = './input' + extension;
                 const outputPath = './sticker.webp';
-
                 fs.writeFileSync(inputPath, media.data, 'base64');
-
+                const speedFilter = `setpts=${1 / speedMultiplier}*PTS`;
                 ffmpeg(inputPath)
                     .outputOptions([
                         '-vcodec libwebp',
-                        '-vf scale=512:512:force_original_aspect_ratio=increase,crop=512:512,fps=15',
+                        `-vf scale=512:512:force_original_aspect_ratio=increase,crop=512:512,${speedFilter},fps=15`,
                         '-loop 0',
                         '-ss 0',
                         '-t 5',
