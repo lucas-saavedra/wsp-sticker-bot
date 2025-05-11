@@ -1,18 +1,16 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const qrcode = require('qrcode');
 const fs = require('fs');
+const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
-
+const app = express();
+let latestQR = null;
 const client = new Client({
-  puppeteer: {
-    executablePath: '/usr/bin/chromium-browser',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: true
-  },
-  authStrategy: new LocalAuth()
-});
-client.on('qr', qr => {
-    qrcode.generate(qr, { small: true });
+    puppeteer: {
+        executablePath: '/usr/bin/chromium-browser',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
+    authStrategy: new LocalAuth()
 });
 
 client.on('ready', () => {
@@ -20,7 +18,6 @@ client.on('ready', () => {
 });
 
 client.on('message_create', async message => {
-
     if (message.body === '!sticker' && message.hasQuotedMsg) {
         const quotedMsg = await message.getQuotedMessage();
 
@@ -90,5 +87,28 @@ client.on('message_create', async message => {
             message.reply('Responde a un video o gif con !sticker');
         }
     }
+});
+client.on('qr', (qr) => {
+    console.log('QR recibido');
+    latestQR = qr;
+});
+
+app.get('/', async (req, res) => {
+    if (!latestQR) {
+        return res.send('<h2>Esperando QR...</h2>');
+    }
+    const qrImage = await qrcode.toDataURL(latestQR, { errorCorrectionLevel: 'H' });
+    res.send(`
+    <html>
+      <body style="text-align: center; font-family: sans-serif;">
+        <h2>Escanea este QR para iniciar sesión</h2>
+        <img src="${qrImage}" alt="QR de WhatsApp"/>
+      </body>
+    </html>
+  `);
+});
+
+app.listen(3000, () => {
+    console.log('QR disponible en http://localhost:3000');
 });
 client.initialize();

@@ -32,7 +32,8 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 # Usa directorio de trabajo
 WORKDIR /app
-
+# Exponer el puerto para el QR web
+EXPOSE 3000
 # Copia el código fuente
 COPY . .
 
