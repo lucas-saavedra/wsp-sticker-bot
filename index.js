@@ -40,8 +40,12 @@ client.on('message_create', async message => {
                 fs.writeFileSync(filePath, media.data, 'base64');
 
                 const sticker = MessageMedia.fromFilePath(filePath);
-                await message.reply(sticker, undefined, { sendMediaAsSticker: true });
-
+                try {
+                    await message.reply(sticker, undefined, { sendMediaAsSticker: true });
+                } catch (error) {
+                    console.error('Error al enviar el sticker:', error);
+                    message.reply('Hubo un error al enviar el sticker.');
+                }
                 fs.unlinkSync(filePath);
                 return;
             }
@@ -67,8 +71,13 @@ client.on('message_create', async message => {
                     .output(outputPath)
                     .on('end', () => {
                         const sticker = MessageMedia.fromFilePath(outputPath);
-                        message.reply(sticker, undefined, { sendMediaAsSticker: true });
-
+                        try {
+                            // Enviar el sticker
+                            message.reply(sticker, undefined, { sendMediaAsSticker: true });
+                        } catch (error) {
+                            console.error('Error al enviar el sticker:', error);
+                            message.reply('Hubo un error al enviar el sticker.');
+                        }
                         fs.unlinkSync(inputPath);
                         fs.unlinkSync(outputPath);
                     })
