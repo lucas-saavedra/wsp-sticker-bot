@@ -6,10 +6,10 @@ const ffmpeg = require('fluent-ffmpeg');
 const app = express();
 let latestQR = null;
 const client = new Client({
-    /*   puppeteer: {
-          executablePath: '/usr/bin/chromium-browser',
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      }, */
+    puppeteer: {
+        executablePath: '/usr/bin/chromium-browser',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
     authStrategy: new LocalAuth()
 });
 
