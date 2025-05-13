@@ -6,10 +6,10 @@ const ffmpeg = require('fluent-ffmpeg');
 const app = express();
 let latestQR = null;
 const client = new Client({
-    puppeteer: {
-        executablePath: '/usr/bin/chromium-browser',
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    },
+    /*   puppeteer: {
+          executablePath: '/usr/bin/chromium-browser',
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      }, */
     authStrategy: new LocalAuth()
 });
 
@@ -40,12 +40,8 @@ client.on('message_create', async message => {
                 fs.writeFileSync(filePath, media.data, 'base64');
 
                 const sticker = MessageMedia.fromFilePath(filePath);
-                try {
-                    await message.reply(sticker, undefined, { sendMediaAsSticker: true });
-                } catch (error) {
-                    console.error('Error al enviar el sticker:', error);
-                    message.reply('Hubo un error al enviar el sticker.');
-                }
+                await message.reply(sticker, undefined, { sendMediaAsSticker: true });
+
                 fs.unlinkSync(filePath);
                 return;
             }
@@ -60,7 +56,7 @@ client.on('message_create', async message => {
                 ffmpeg(inputPath)
                     .outputOptions([
                         '-vcodec libwebp',
-                        `-vf scale=512:512:force_original_aspect_ratio=increase,crop=512:512,${speedFilter},fps=15`,
+                        `-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,${speedFilter},fps=15`,
                         '-loop 0',
                         '-ss 0',
                         '-t 5',
@@ -70,14 +66,16 @@ client.on('message_create', async message => {
                     ])
                     .output(outputPath)
                     .on('end', () => {
-                        const sticker = MessageMedia.fromFilePath(outputPath);
-                        try {
-                            // Enviar el sticker
-                            message.reply(sticker, undefined, { sendMediaAsSticker: true });
-                        } catch (error) {
-                            console.error('Error al enviar el sticker:', error);
-                            message.reply('Hubo un error al enviar el sticker.');
+                        const stats = fs.statSync(outputPath);
+                        if (stats.size > 1024 * 1024) { // Mayor a 1 MB
+                            console.warn('⚠️ El sticker es demasiado grande:', stats.size / 1024, 'KB');
+                            message.reply('El sticker es demasiado grande. Probá con un video o GIF más corto.');
+                            fs.unlinkSync(outputPath);
+                            fs.unlinkSync(inputPath);
+                            return;
                         }
+                        const sticker = MessageMedia.fromFilePath(outputPath);
+                        message.reply(sticker, undefined, { sendMediaAsSticker: true });
                         fs.unlinkSync(inputPath);
                         fs.unlinkSync(outputPath);
                     })
