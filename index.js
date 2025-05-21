@@ -1,6 +1,7 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const fs = require('fs');
+const { exec } = require('child_process');
 const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const app = express();
@@ -91,6 +92,72 @@ client.on('message_create', async message => {
             message.reply('Responde a un video o gif con !sticker');
         }
     }
+    if (message.body.startsWith('!stickerlink') && message.hasQuotedMsg) {
+        const quotedMsg = await message.getQuotedMessage();
+        const url = quotedMsg.body.trim();
+
+        if (!url.startsWith('http')) {
+            message.reply('❌ El mensaje citado no parece tener un enlace válido.');
+            return;
+        }
+
+        // Validar si es URL de Twitter o Instagram
+        const isTwitter = url.includes('x.com');
+        const isInstagram = url.includes('instagram.com') || url.includes('instagr.am');
+
+        if (!isTwitter && !isInstagram) {
+            message.reply('❌ Solo puedo procesar enlaces de Twitter o Instagram.');
+            return;
+        }
+
+        const inputPath = './downloaded.mp4';
+        const outputPath = './sticker.webp';
+
+        message.reply('⏳ Descargando video...');
+
+        // Comando yt-dlp: funciona para Twitter e Instagram
+        exec(`yt-dlp -f mp4 "${url}" -o "${inputPath}"`, (err, stdout, stderr) => {
+            if (err) {
+                console.error('❌ yt-dlp error:', err);
+                message.reply('❌ No pude descargar el video. ¿Es un enlace público y válido de Twitter o Instagram?');
+                return;
+            }
+
+            ffmpeg(inputPath)
+                .outputOptions([
+                    '-vcodec libwebp',
+                    '-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,fps=15',
+                    '-loop 0',
+                    '-ss 0',
+                    '-t 5',
+                    '-preset default',
+                    '-an',
+                    '-vsync 0'
+                ])
+                .output(outputPath)
+                .on('end', () => {
+                    const stats = fs.statSync(outputPath);
+                    if (stats.size > 1024 * 1024) {
+                        message.reply('⚠️ El sticker generado es demasiado grande. Probá con otro video.');
+                        fs.unlinkSync(inputPath);
+                        fs.unlinkSync(outputPath);
+                        return;
+                    }
+
+                    const sticker = MessageMedia.fromFilePath(outputPath);
+                    message.reply(sticker, undefined, { sendMediaAsSticker: true });
+
+                    fs.unlinkSync(inputPath);
+                    fs.unlinkSync(outputPath);
+                })
+                .on('error', err => {
+                    console.error('❌ Error al convertir a sticker:', err);
+                    message.reply('Hubo un error al generar el sticker.');
+                })
+                .run();
+        });
+    }
+
 });
 client.on('qr', (qr) => {
     console.log('QR recibido');

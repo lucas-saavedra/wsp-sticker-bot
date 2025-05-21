@@ -1,9 +1,12 @@
 FROM node:22
 
-# Instala las dependencias de Chromium necesarias
+# Instala dependencias necesarias
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
+    curl \
+    python3 \
+    python3-pip \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -22,23 +25,28 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     xdg-utils \
     ffmpeg \
+    chromium \
     --no-install-recommends && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y chromium && \
-    ln -s /usr/bin/chromium /usr/bin/chromium-browser
-# Setea variable de entorno para Puppeteer
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-# Usa directorio de trabajo
+# Instalación de yt-dlp
+RUN pip3 install --no-cache-dir yt-dlp
+
+# Symlink para Puppeteer (opcional)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Crea carpeta de trabajo
 WORKDIR /app
-# Exponer el puerto para el QR web
-EXPOSE 3000
-# Copia el código fuente
+
+# Copia el código fuente al contenedor
 COPY . .
 
-# Instala dependencias
+# Instala dependencias Node.js
 RUN npm install
 
-# Inicia el bot
+# Expone el puerto 3000 para QR o interfaz web
+EXPOSE 3000
+
+# Comando por defecto al iniciar el contenedor
 CMD ["npm", "start"]
