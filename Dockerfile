@@ -1,12 +1,12 @@
 FROM node:22
 
-# Instala dependencias necesarias
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     ca-certificates \
     curl \
     python3 \
     python3-pip \
+    python3-venv \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -26,27 +26,24 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     ffmpeg \
     chromium \
-    --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalación de yt-dlp
-RUN pip3 install --no-cache-dir yt-dlp
+# Crear un virtualenv para yt-dlp y activar
+RUN python3 -m venv /opt/yt-dlp-venv && \
+    /opt/yt-dlp-venv/bin/pip install --no-cache-dir --upgrade pip yt-dlp
 
-# Symlink para Puppeteer (opcional)
+# Añadir yt-dlp al PATH
+ENV PATH="/opt/yt-dlp-venv/bin:$PATH"
+
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Crea carpeta de trabajo
 WORKDIR /app
 
-# Copia el código fuente al contenedor
 COPY . .
 
-# Instala dependencias Node.js
 RUN npm install
 
-# Expone el puerto 3000 para QR o interfaz web
 EXPOSE 3000
 
-# Comando por defecto al iniciar el contenedor
 CMD ["npm", "start"]
