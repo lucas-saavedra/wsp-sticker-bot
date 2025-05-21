@@ -92,7 +92,9 @@ client.on('message_create', async message => {
             message.reply('Responde a un video o gif con !sticker');
         }
     }
-    if (message.body.startsWith('!stickerlink') && message.hasQuotedMsg) {
+    const matchLink = message.body.match(/^!stickerlink(?:\s+(\d+(?:\.\d+)?x))?$/i);
+    if (matchLink && message.hasQuotedMsg) {
+        const speedMultiplier = matchLink[1] ? parseFloat(matchLink[1].replace('x', '')) : 1;
         const quotedMsg = await message.getQuotedMessage();
         const url = quotedMsg.body.trim();
 
@@ -113,7 +115,7 @@ client.on('message_create', async message => {
         const inputPath = './downloaded.mp4';
         const outputPath = './sticker.webp';
 
-        message.reply('⏳ Descargando video...');
+        // message.reply('⏳ Descargando video...');
 
         // Comando yt-dlp: funciona para Twitter e Instagram
         exec(`yt-dlp -f mp4 "${url}" -o "${inputPath}"`, (err, stdout, stderr) => {
@@ -122,11 +124,11 @@ client.on('message_create', async message => {
                 message.reply('❌ No pude descargar el video. ¿Es un enlace público y válido de Twitter o Instagram?');
                 return;
             }
-
+            const speedFilter = `setpts=${1 / speedMultiplier}*PTS`;
             ffmpeg(inputPath)
                 .outputOptions([
                     '-vcodec libwebp',
-                    '-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,fps=15',
+                    `-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,${speedFilter},fps=15`,
                     '-loop 0',
                     '-ss 0',
                     '-t 5',
