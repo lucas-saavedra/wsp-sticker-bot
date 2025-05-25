@@ -27,7 +27,10 @@ client.on('message_create', async message => {
             '- `!sticker` - Responde a un video o imagen para convertirlo en sticker.\n' +
             '- `!sticker <multiplicador>` - Responde a un video o GIF y ajusta la velocidad del sticker (ej: `!sticker 2x`).\n' +
             '- `!stickerlink` - Responde a un enlace de Twitter o Instagram para convertirlo en sticker.\n' +
-            '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).'
+            '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).' +
+            '- `!stickerlink --download` - Responde a un enlace de Twitter o Instagram para descargar el video.\n' +
+            '- `!stickerlink <multiplicador> --download` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x --download`).\n' +
+            '¡Disfruta creando stickers! \n'
         );
         return;
     }
@@ -216,7 +219,6 @@ function descargarVideo(url, message, speedMultiplier) {
         filters.push(speed.toFixed(2));
         return filters.join(',');
     }
-    const speedFilter = `setpts=${1 / speedMultiplier}*PTS`;
     const inputPath = './d.mp4';
     const outputPath = './video.mp4';
     console.log('Descargando video de:', url);
