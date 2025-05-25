@@ -19,6 +19,18 @@ client.on('ready', () => {
 });
 
 client.on('message_create', async message => {
+    //if !sticker --help
+    if (message.body === '!sticker --help') {
+        message.reply(
+            '¡Hola! Soy un bot de stickers.\n' +
+            'Uso:\n' +
+            '- `!sticker` - Responde a un video o imagen para convertirlo en sticker.\n' +
+            '- `!sticker <multiplicador>` - Responde a un video o GIF y ajusta la velocidad del sticker (ej: `!sticker 2x`).\n' +
+            '- `!stickerlink` - Responde a un enlace de Twitter o Instagram para convertirlo en sticker.\n' +
+            '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).'
+        );
+        return;
+    }
     const match = message.body.match(/^!sticker(?:\s+(\d+(?:\.\d+)?x))?$/i);
     if (match && message.hasQuotedMsg) {
         const speedMultiplier = match[1] ? parseFloat(match[1].replace('x', '')) : 1;
@@ -62,6 +74,7 @@ client.on('message_create', async message => {
                         '-ss 0',
                         '-t 5',
                         '-preset default',
+                        `-qscale 30`,
                         '-an',
                         '-vsync 0'
                     ])
@@ -92,7 +105,8 @@ client.on('message_create', async message => {
             message.reply('Responde a un video o gif con !sticker');
         }
     }
-    const matchLink = message.body.match(/^!stickerlink(?:\s+(\d+(?:\.\d+)?x))?$/i);
+    const matchLink = message.body.match(/^!stickerlink(?:\s+(\d+(?:\.\d+)?x))?(?:\s+--download)?$/i);
+    const wantsDownload = message.body.includes('--download');
     if (matchLink && message.hasQuotedMsg) {
         const speedMultiplier = matchLink[1] ? parseFloat(matchLink[1].replace('x', '')) : 1;
         const quotedMsg = await message.getQuotedMessage();
@@ -115,9 +129,11 @@ client.on('message_create', async message => {
         const inputPath = './downloaded.mp4';
         const outputPath = './sticker.webp';
 
-        // message.reply('⏳ Descargando video...');
+        if (wantsDownload) {
+            descargarVideo(url, message, speedMultiplier);
+            return;
+        }
 
-        // Comando yt-dlp: funciona para Twitter e Instagram
         exec(`yt-dlp -f mp4 "${url}" -o "${inputPath}"`, (err, stdout, stderr) => {
             if (err) {
                 console.error('❌ yt-dlp error:', err);
@@ -133,6 +149,7 @@ client.on('message_create', async message => {
                     '-ss 0',
                     '-t 5',
                     '-preset default',
+                    `-qscale 30`,
                     '-an',
                     '-vsync 0'
                 ])
@@ -184,4 +201,56 @@ app.get('/', async (req, res) => {
 app.listen(3000, () => {
     console.log('QR disponible en http://localhost:3000');
 });
+
+function descargarVideo(url, message, speedMultiplier) {
+    function buildAtempoFilters(speed) {
+        const filters = [];
+        while (speed > 2.0) {
+            filters.push("2.0");
+            speed /= 2.0;
+        }
+        while (speed < 0.5) {
+            filters.push("0.5");
+            speed /= 0.5;
+        }
+        filters.push(speed.toFixed(2));
+        return filters.join(',');
+    }
+    const speedFilter = `setpts=${1 / speedMultiplier}*PTS`;
+    const inputPath = './d.mp4';
+    const outputPath = './video.mp4';
+    console.log('Descargando video de:', url);
+    try {
+        exec(`yt-dlp -f mp4 "${url}" -o "${inputPath}"`, (err) => {
+            if (err) {
+                message.reply('❌ No pude descargar el video.');
+                return;
+            }
+            ffmpeg(inputPath)
+                .outputOptions([
+                    `-vf setpts=${1 / speedMultiplier}*PTS`,
+                    `-filter:a atempo=${buildAtempoFilters(speedMultiplier)}`
+                ])
+                .output(outputPath)
+                .on('end', () => {
+
+                    const video = MessageMedia.fromFilePath(outputPath);
+                    message.reply(video);
+
+                    fs.unlinkSync(inputPath);
+                    fs.unlinkSync(outputPath);
+                })
+                .on('error', err => {
+                    console.error('❌ Error al convertir a sticker:', err);
+                    message.reply('Hubo un error al generar el sticker.');
+                })
+                .run();
+
+        });
+    } catch (error) {
+        console.log('Error al descargar el video:', error);
+    }
+
+}
+
 client.initialize();
