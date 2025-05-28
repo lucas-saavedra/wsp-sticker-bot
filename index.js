@@ -4,23 +4,15 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
-const os = require('os');
 const app = express();
 let latestQR = null;
-let executablePath;
-if (os.platform() === 'win32') {
-    executablePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-} else {
-    executablePath = '/usr/bin/chromium-browser';
-}
 const client = new Client({
     puppeteer: {
-        executablePath,
+        executablePath: '/usr/bin/chromium-browser',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     },
     authStrategy: new LocalAuth()
 });
-
 client.on('ready', () => {
     console.log('Bot listo!');
 });
