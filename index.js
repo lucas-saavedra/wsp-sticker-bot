@@ -24,19 +24,27 @@ client.on('message_create', async message => {
         message.reply(
             '¡Hola! Soy un bot de stickers.\n' +
             'Uso:\n' +
-            '- `!sticker` - Responde a un video o imagen para convertirlo en sticker.\n' +
-            '- `!sticker <multiplicador>` - Responde a un video o GIF y ajusta la velocidad del sticker (ej: `!sticker 2x`).\n' +
-            '- `!stickerlink` - Responde a un enlace de Twitter o Instagram para convertirlo en sticker.\n' +
-            '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).' +
-            '- `!stickerlink --download` - Responde a un enlace de Twitter o Instagram para descargar el video.\n' +
+            '- `!sticker` - Responde a un video o imagen para convertirlo en sticker.\n\n' +
+            '- `!sticker <multiplicador>` - Responde a un video o GIF y ajusta la velocidad del sticker (ej: `!sticker 2x`).\n\n' +
+            '- `!stickerlink` - Responde a un enlace de Twitter o Instagram para convertirlo en sticker.\n\n' +
+            '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).\n\n' +
+            '- `!stickerlink --download` - Responde a un enlace de Twitter o Instagram para descargar el video.\n\n' +
             '- `!stickerlink <multiplicador> --download` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x --download`).\n' +
             '¡Disfruta creando stickers! \n'
         );
         return;
     }
-    const match = message.body.match(/^!sticker(?:\s+(\d+(?:\.\d+)?x))?$/i);
+    // Permite: !sticker [multiplicador] [-t duración]
+    // Ejemplo: !sticker 2x -t 3
+    const match = message.body.match(/^!sticker(?:\s+(\d+(?:\.\d+)?x))?(?:\s+-t\s+(\d+))?$/i);
     if (match && message.hasQuotedMsg) {
         const speedMultiplier = match[1] ? parseFloat(match[1].replace('x', '')) : 1;
+        const duration = match[2] ? parseInt(match[2], 10) : 5; // Duración por defecto de 5 segundos
+        if (isNaN(speedMultiplier) || speedMultiplier <= 0 || speedMultiplier > 10) {
+            console.warn('❌ El multiplicador debe ser un número positivo y menor o igual a 10:', speedMultiplier);
+            message.reply('❌ El multiplicador debe ser un número positivo y menor o igual a 10.');
+            return;
+        }
         const quotedMsg = await message.getQuotedMessage();
         if (quotedMsg.hasMedia) {
             const media = await quotedMsg.downloadMedia();
@@ -75,7 +83,7 @@ client.on('message_create', async message => {
                         `-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,${speedFilter},fps=15`,
                         '-loop 0',
                         '-ss 0',
-                        '-t 5',
+                        `-t ${duration}`, // Duración del sticker
                         '-preset default',
                         `-qscale 30`,
                         '-an',
@@ -108,10 +116,18 @@ client.on('message_create', async message => {
             message.reply('Responde a un video o gif con !sticker');
         }
     }
-    const matchLink = message.body.match(/^!stickerlink(?:\s+(\d+(?:\.\d+)?x))?(?:\s+--download)?$/i);
+    // Permite: !stickerlink [multiplicador] [-t duración] [--download]
+    // Ejemplo: !stickerlink 2x -t 3 --download
+    const matchLink = message.body.match(/^!stickerlink(?:\s+(\d+(?:\.\d+)?x))?(?:\s+-t\s+(\d+))?(?:\s+--download)?$/i);
     const wantsDownload = message.body.includes('--download');
     if (matchLink && message.hasQuotedMsg) {
         const speedMultiplier = matchLink[1] ? parseFloat(matchLink[1].replace('x', '')) : 1;
+        const duration = matchLink[2] ? parseInt(matchLink[2], 10) : 5; // Duración por defecto de 5 segundos
+        if (isNaN(speedMultiplier) || speedMultiplier <= 0 || speedMultiplier > 10) {
+            console.warn('❌ El multiplicador debe ser un número positivo y menor o igual a 10:', speedMultiplier);
+            message.reply('❌ El multiplicador debe ser un número positivo y menor o igual a 10.');
+            return;
+        }
         const quotedMsg = await message.getQuotedMessage();
         const url = quotedMsg.body.trim();
 
@@ -150,7 +166,7 @@ client.on('message_create', async message => {
                     `-vf scale=512:512:force_original_aspect_ratio=increase,crop=480:480,${speedFilter},fps=15`,
                     '-loop 0',
                     '-ss 0',
-                    '-t 5',
+                    '-t ' + duration, // Duración del sticker
                     '-preset default',
                     `-qscale 30`,
                     '-an',
