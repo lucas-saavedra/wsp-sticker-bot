@@ -4,11 +4,18 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
+const os = require('os');
 const app = express();
 let latestQR = null;
+let executablePath;
+if (os.platform() === 'win32') {
+    executablePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+} else {
+    executablePath = '/usr/bin/chromium-browser';
+}
 const client = new Client({
     puppeteer: {
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     },
     authStrategy: new LocalAuth()
@@ -30,6 +37,10 @@ client.on('message_create', async message => {
             '- `!stickerlink <multiplicador>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x`).\n\n' +
             '- `!stickerlink --download` - Responde a un enlace de Twitter o Instagram para descargar el video.\n\n' +
             '- `!stickerlink <multiplicador> --download` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad del sticker (ej: `!stickerlink 2x --download`).\n' +
+            'Nota: El multiplicador debe ser un número positivo y menor o igual a 10.\n\n' +
+            'La duración por defecto del sticker es de 5 segundos.\n' +
+            '- `!sticker <multiplicador> -t <duración>` - Responde a un video o GIF y ajusta la velocidad y duración del sticker (ej: `!sticker 2x -t 3`).\n\n' +
+            '- `!stickerlink <multiplicador> -t <duración>` - Responde a un enlace de Twitter o Instagram y ajusta la velocidad y duración del sticker (ej: `!stickerlink 2x -t 3`).\n\n' +
             '¡Disfruta creando stickers! \n'
         );
         return;
