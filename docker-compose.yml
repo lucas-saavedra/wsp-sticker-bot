@@ -4,6 +4,7 @@ services:
   whatsapp-bot:
     build: .
     entrypoint: ["/start.sh"]
+    command: ["npm", "start"]
     container_name: whatsapp-sticker-bot
     restart: unless-stopped
     environment:
