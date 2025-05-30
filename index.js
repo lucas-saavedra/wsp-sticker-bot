@@ -6,15 +6,31 @@ const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const app = express();
 let latestQR = null;
+
+const fs = require('fs');
+const path = require('path');
+
+// Directorio exclusivo para el perfil del navegador
+const userDataDir = '/app/.wwebjs_auth/default';
+
+// Elimina el archivo de bloqueo si quedó colgado
+const lockfile = path.join(userDataDir, 'SingletonLock');
+if (fs.existsSync(lockfile)) {
+  console.warn('Eliminando archivo de bloqueo de Chromium...');
+  fs.unlinkSync(lockfile);
+}
 const client = new Client({
     puppeteer: {
-        executablePath: '/usr/bin/chromium-browser',
-        args: ['--no-sandbox', '--disable-setuid-sandbox',
+        executablePath:  process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+        args: ['--no-sandbox',
             '--disable-setuid-sandbox',
-            '--headless=new',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--user-data-dir=/app/.wwebjs_auth/default', // <--- Directorio exclusivo
+            '--remote-debugging-port=9222'               // <--- Evita conflictos internos
         ],
     },
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth({ clientId: 'default' })
 });
 client.on('ready', () => {
     console.log('Bot listo!');

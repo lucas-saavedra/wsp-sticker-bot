@@ -1,10 +1,8 @@
-version: "3.8"
+version: '3.8'
 
 services:
   whatsapp-bot:
     build: .
-    entrypoint: ["/start.sh"]
-    command: ["npm", "start"]
     container_name: whatsapp-sticker-bot
     restart: unless-stopped
     environment:
