@@ -7,7 +7,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const app = express();
 let latestQR = null;
 
-const fs = require('fs');
+
 const path = require('path');
 
 // Directorio exclusivo para el perfil del navegador
