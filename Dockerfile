@@ -1,23 +1,15 @@
-# Etapa 1: builder
-FROM python:3.12-slim AS builder
+FROM node:22
 
-# Crear entorno virtual e instalar yt-dlp
-RUN python3 -m venv /opt/yt-dlp-venv && \
-    /opt/yt-dlp-venv/bin/pip install --no-cache-dir --upgrade pip yt-dlp
-
-# Etapa 2: imagen final
-FROM node:22-slim
-
-# Variables para Puppeteer
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    PATH="/opt/yt-dlp-venv/bin:$PATH"
-
-# Instalar dependencias necesarias del sistema
+# Instalar dependencias necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    chromium \
+    wget \
+    ca-certificates \
+    curl \
     python3 \
+    python3-pip \
+    python3-venv \
+    fonts-liberation \
+    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -33,32 +25,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm-dev \
     libxshmfence1 \
     xdg-utils \
-    fonts-liberation \
-    libappindicator3-1 \
-    curl \
-    wget \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+    ffmpeg \
+    chromium \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enlace simbólico requerido por Puppeteer
+# Crear enlace simbólico para chromium-browser (requerido por Puppeteer)
 RUN ln -s /usr/bin/chromium /usr/bin/chromium-browser || true
 
-# Copiar yt-dlp desde la etapa builder
-COPY --from=builder /opt/yt-dlp-venv /opt/yt-dlp-venv
+# Crear entorno virtual para yt-dlp e instalarlo
+RUN python3 -m venv /opt/yt-dlp-venv && \
+    /opt/yt-dlp-venv/bin/pip install --no-cache-dir --upgrade pip yt-dlp
 
-# Establecer carpeta de trabajo
+# Añadir yt-dlp al PATH
+ENV PATH="/opt/yt-dlp-venv/bin:$PATH"
+
+# Configurar Puppeteer para no descargar Chromium y usar el instalado
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Crear carpeta de trabajo
 WORKDIR /app
 
-# Copiar solo los archivos necesarios para cache de dependencias
-COPY package*.json ./
+# Copiar código fuente
+COPY . .
 
 # Instalar dependencias Node.js
 RUN npm install
 
-# Copiar el resto del código
-COPY . .
-
-# Exponer puerto (ajústalo si usas otro)
+# Exponer puerto (ejemplo: 3000)
 EXPOSE 8080
 
 # Comando por defecto
