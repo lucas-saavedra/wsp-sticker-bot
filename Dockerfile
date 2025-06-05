@@ -53,7 +53,7 @@ COPY . .
 RUN npm install
 
 # Exponer puerto (ejemplo: 3000)
-EXPOSE 3000
+EXPOSE 8080
 
 # Comando por defecto
 CMD ["npm", "start"]
