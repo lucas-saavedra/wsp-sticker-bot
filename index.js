@@ -6,7 +6,7 @@ const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const app = express();
 let latestQR = null;
-
+app.set('trust proxy', true);
 
 const path = require('path');
 
