@@ -16,12 +16,13 @@ const userDataDir = '/app/.wwebjs_auth/default';
 // Elimina el archivo de bloqueo si quedó colgado
 const lockfile = path.join(userDataDir, 'SingletonLock');
 if (fs.existsSync(lockfile)) {
-  console.warn('Eliminando archivo de bloqueo de Chromium...');
-  fs.unlinkSync(lockfile);
+    console.warn('Eliminando archivo de bloqueo de Chromium...');
+    fs.unlinkSync(lockfile);
 }
 const client = new Client({
-    puppeteer: {
-        executablePath:  process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+    puppeteer: { //ruta del esge window "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser', // <--- Cambia esto si usas otro navegador
+        headless: true, // <--- Ejecuta en modo headless
         args: ['--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
@@ -91,7 +92,7 @@ client.on('message_create', async message => {
                 fs.unlinkSync(filePath);
                 return;
             }
-
+            console.log('Tipo de media recibido:', mime);
             // Si es gif o video
             if (mime.includes('gif') || mime.includes('video')) {
                 const extension = mime.includes('gif') ? '.gif' : '.mp4';
@@ -174,7 +175,7 @@ client.on('message_create', async message => {
             descargarVideo(url, message, speedMultiplier);
             return;
         }
-
+        console.log('Descargando video de:', url);
         exec(`yt-dlp -f mp4 "${url}" -o "${inputPath}"`, (err, stdout, stderr) => {
             if (err) {
                 console.error('❌ yt-dlp error:', err);
@@ -239,8 +240,9 @@ app.get('/', async (req, res) => {
   `);
 });
 
-app.listen(3000, () => {
-    console.log('QR disponible en http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 function descargarVideo(url, message, speedMultiplier) {
